@@ -1,3 +1,5 @@
+"""LightningFlower Server"""
+
 import flwr as fl
 from flwr.server.client_manager import SimpleClientManager
 from lightningflower.config import LightningFlowerDefaults

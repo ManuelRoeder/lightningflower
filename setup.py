@@ -6,7 +6,7 @@ required_packages = [
 
 setup(
     name="lightningflower",
-    version="0.1.0",
+    version="0.1.1",
     description="Flower based Pytorch lightning framework",
     url="https://github.com/ManuelRoeder/lightningflower",
     author="Manuel Roeder",

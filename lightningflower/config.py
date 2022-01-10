@@ -1,3 +1,5 @@
+"""LightningFlower Default Configuration"""
+
 from enum import Enum
 
 

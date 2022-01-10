@@ -1,13 +1,14 @@
+"""LightningFlower Client"""
+
 import flwr as fl
 from flwr.common import EvaluateIns, EvaluateRes, FitRes
 import pytorch_lightning as pl
 import torch
 import timeit
 from collections import OrderedDict
-from lightningflower.utility import printf, id_generator
+from lightningflower.utility import id_generator
 from lightningflower.config import LightningFlowerDefaults
 from lightningflower.model import LightningFlowerModel
-from typing import Dict, List
 
 
 class LightningFlowerClient(fl.client.Client):

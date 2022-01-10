@@ -1,3 +1,5 @@
+"""LightningFlower Strategy"""
+
 import os
 import flwr as fl
 import numpy as np

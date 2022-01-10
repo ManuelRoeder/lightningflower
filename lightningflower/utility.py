@@ -1,3 +1,5 @@
+"""LightningFlower Utility"""
+
 import os
 import inspect
 import numpy as np
@@ -30,10 +32,12 @@ def load_params(full_filepath):
 
 
 def boolean_string(s):
+    """String to bool conversion"""
     if s not in {'False', 'True'}:
         raise ValueError('Not a valid boolean string')
     return s == 'True'
 
 
 def create_dir(path):
+    """Creating a directory, check if directory exists"""
     return Path(path).mkdir(parents=True, exist_ok=True)
