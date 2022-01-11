@@ -22,7 +22,7 @@ setup(
     python_requires='>=3.8.12',
     package_data={"": ["README.md", "LICENSE"]},
     classifiers=[
-        "Development Status :: 4 - Alpha",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
