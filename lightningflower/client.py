@@ -1,13 +1,12 @@
 """LightningFlower Client"""
-
 import flwr as fl
-from flwr.common import EvaluateIns, EvaluateRes, FitRes
+from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes
 import pytorch_lightning as pl
 import torch
 import timeit
 from collections import OrderedDict
-from lightningflower.utility import id_generator
 from lightningflower.config import LightningFlowerDefaults
+from lightningflower.utility import id_generator
 from lightningflower.model import LightningFlowerModel
 
 
@@ -84,7 +83,7 @@ class LightningFlowerClient(fl.client.Client):
         new_state_dict = self.update_state_dict(self.localModel.model.state_dict(), parameters)
         self.localModel.model.load_state_dict(new_state_dict, strict=False)
 
-    def fit(self, ins):
+    def fit(self, ins: FitIns) -> FitRes:
         """Refine the provided weights using the locally held dataset.
 
         Parameters
@@ -124,7 +123,7 @@ class LightningFlowerClient(fl.client.Client):
                       num_examples=num_train_examples,
                       metrics=metrics)
 
-    def evaluate(self, ins):
+    def evaluate(self, ins: EvaluateIns) -> EvaluateRes:
         """Evaluate the provided weights using the locally held dataset.
 
         Parameters
@@ -154,8 +153,6 @@ class LightningFlowerClient(fl.client.Client):
         accuracy = train_loader_0_result["test_acc"]
         # calculate nr. of examples used by Trainer for test
         num_test_examples = self.testLoader.batch_size * trainer.num_test_batches[0]
-        # log test result
-        #printf("Evaluation: test_loss=" + str(test_loss) + ", num_test_examples=" + str(num_test_examples) + ", accuracy=" + str(accuracy))
         metrics = {"accuracy": accuracy}
         return EvaluateRes(loss=test_loss,
                            num_examples=num_test_examples,

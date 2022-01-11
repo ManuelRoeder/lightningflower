@@ -1,8 +1,7 @@
 """LightningFlower Utility"""
-
-import os
 import inspect
 import numpy as np
+import os
 import secrets
 from pathlib import Path
 

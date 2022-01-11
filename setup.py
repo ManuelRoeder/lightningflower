@@ -10,7 +10,7 @@ required_packages = [
 setup(
     name="lightningflower",
     version="0.1.2",
-    description="Flower based Pytorch lightning framework",
+    description="Pre-packaged federated learning framework using Flower and PyTorch-Lightning.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ManuelRoeder/lightningflower",
@@ -21,4 +21,12 @@ setup(
     install_requires=required_packages,
     python_requires='>=3.8.12',
     package_data={"": ["README.md", "LICENSE"]},
+    classifiers=[
+        "Development Status :: 4 - Alpha",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.8",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence"
+    ]
 )

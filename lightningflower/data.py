@@ -1,8 +1,7 @@
 """LightningFlower Data Module"""
-
+import numpy as np
 import os
 import torch.utils
-import numpy as np
 from torch.utils.data import DataLoader
 from lightningflower.config import LightningFlowerDefaults, DatasetConfig
 

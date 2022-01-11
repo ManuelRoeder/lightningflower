@@ -1,8 +1,7 @@
 """LightningFlower Strategy"""
-
-import os
 import flwr as fl
 import numpy as np
+import os
 import pytorch_lightning.utilities.argparse as arg_parser
 from argparse import ArgumentParser, Namespace
 from flwr.server.strategy import FedAvg
