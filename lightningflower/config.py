@@ -12,6 +12,7 @@ class LightningFlowerDefaults(object):
     NR_ROUNDS = 2
     GRPC_MAX_MSG_LENGTH = 1073741824  # 1024x1024x1024
     HOST_ADDRESS = "localhost:8081"
+    CLIENT_ID = 1
     WEIGHTS_FILENAME = "weights.npz"
     WEIGHTS_FOLDER = "./saved_weights"
     DATASET_FOLDER = './data'

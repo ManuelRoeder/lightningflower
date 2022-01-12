@@ -6,8 +6,8 @@ import torch
 import timeit
 from collections import OrderedDict
 from lightningflower.config import LightningFlowerDefaults
-from lightningflower.utility import id_generator
 from lightningflower.model import LightningFlowerModel
+from torch.utils.data import DataLoader
 
 
 class LightningFlowerClient(fl.client.Client):
@@ -16,6 +16,7 @@ class LightningFlowerClient(fl.client.Client):
         parser = parent_parser.add_argument_group("LightningFlowerClient")
         parser.add_argument("--host_address", type=str, default=LightningFlowerDefaults.HOST_ADDRESS)
         parser.add_argument("--max_msg_size", type=int, default=LightningFlowerDefaults.GRPC_MAX_MSG_LENGTH)
+        parser.add_argument("--client_id", type=int, default=LightningFlowerDefaults.CLIENT_ID)
         return parent_parser
 
     @staticmethod
@@ -31,17 +32,23 @@ class LightningFlowerClient(fl.client.Client):
     def __init__(self,
                  model,
                  trainer_args,
-                 c_id=id_generator(),
-                 train_loader=None,
-                 test_loader=None):
+                 c_id,
+                 train_ds=None,
+                 test_ds=None):
         # make sure that the model is a lightningflowermodel
         assert isinstance(model, LightningFlowerModel)
+        # check option datasets
+        if train_ds is None:
+            train_ds = []
+        if test_ds is None:
+            test_ds = []
         # client id
         self.c_id = c_id
+        # assign local model
         self.localModel = model
-        # optional training and test loader
-        self.trainLoader = train_loader
-        self.testLoader = test_loader
+        # optional training and test datasets
+        self.train_ds = train_ds
+        self.test_ds = test_ds
         # trainer configuration
         self.trainer_config = trainer_args
 
@@ -107,14 +114,13 @@ class LightningFlowerClient(fl.client.Client):
         fit_begin = timeit.default_timer()
         # update local client model parameters
         self.set_parameters(weights)
+        # create dataloader on-the-fly
+        data_loader = DataLoader(self.train_ds, batch_size=self.trainer_config.batch_size, shuffle=True)
         # training procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
-        trainer.fit(model=self.localModel.model, train_dataloader=self.trainLoader)
+        trainer.fit(model=self.localModel.model, train_dataloader=data_loader)
         # calculate nr. of examples used by Trainer for train
-        num_train_examples = self.trainLoader.batch_size * trainer.num_training_batches
-        # log train data
-        #printf("Train: num_train_examples=" + str(num_train_examples))
-
+        num_train_examples = data_loader.batch_size * trainer.num_training_batches
         # return updated model parameters
         weights_prime: fl.common.Weights = self.get_trainable_weights()
         params_prime = fl.common.weights_to_parameters(weights_prime)
@@ -144,15 +150,17 @@ class LightningFlowerClient(fl.client.Client):
         weights: fl.common.Weights = fl.common.parameters_to_weights(ins.parameters)
         # update local client model parameters
         self.set_parameters(weights)
+        # create dataloader on-the-fly
+        data_loader = DataLoader(self.test_ds, batch_size=self.trainer_config.batch_size, shuffle=True)
         # evaluation procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
-        test_result = trainer.test(self.localModel.model, self.testLoader)
+        test_result = trainer.test(self.localModel.model, data_loader)
         # obtain result of first train_loader
         train_loader_0_result = test_result[0]
         test_loss = train_loader_0_result["test_loss"]
         accuracy = train_loader_0_result["test_acc"]
         # calculate nr. of examples used by Trainer for test
-        num_test_examples = self.testLoader.batch_size * trainer.num_test_batches[0]
+        num_test_examples = data_loader.batch_size * trainer.num_test_batches[0]
         metrics = {"accuracy": accuracy}
         return EvaluateRes(loss=test_loss,
                            num_examples=num_test_examples,
