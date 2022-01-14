@@ -119,11 +119,12 @@ class LightningFlowerClient(fl.client.Client):
         # update local client model parameters
         self.set_parameters(weights)
         # create dataloader on-the-fly
+        shuffle_loading = self.train_sampler is None
         data_loader = DataLoader(dataset=self.train_ds,
                                  batch_size=self.trainer_config.batch_size_train,
                                  sampler=self.train_sampler,
                                  num_workers=self.trainer_config.num_workers,
-                                 shuffle=True)
+                                 shuffle=shuffle_loading)
         # training procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
         trainer.fit(model=self.localModel.model, train_dataloader=data_loader)
@@ -162,7 +163,7 @@ class LightningFlowerClient(fl.client.Client):
         data_loader = DataLoader(dataset=self.test_ds,
                                  batch_size=self.trainer_config.batch_size_test,
                                  num_workers=self.trainer_config.num_workers,
-                                 shuffle=True)
+                                 shuffle=False)
         # evaluation procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
         test_result = trainer.test(self.localModel.model, data_loader)
