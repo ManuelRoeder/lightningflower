@@ -20,3 +20,4 @@ class LightningFlowerDefaults(object):
     BATCH_SIZE_TEST = 32
     DATASET_CONFIG = DatasetConfig.IID
     NUM_WORKERS = 2
+    NUM_CLIENTS = 2

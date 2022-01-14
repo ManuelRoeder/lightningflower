@@ -17,6 +17,7 @@ class LightningFlowerClient(fl.client.Client):
         parser.add_argument("--host_address", type=str, default=LightningFlowerDefaults.HOST_ADDRESS)
         parser.add_argument("--max_msg_size", type=int, default=LightningFlowerDefaults.GRPC_MAX_MSG_LENGTH)
         parser.add_argument("--client_id", type=int, default=LightningFlowerDefaults.CLIENT_ID)
+        parser.add_argument("--num_clients", type=int, default=LightningFlowerDefaults.CLIENT_ID)
         return parent_parser
 
     @staticmethod
@@ -34,7 +35,8 @@ class LightningFlowerClient(fl.client.Client):
                  trainer_args,
                  c_id,
                  train_ds=None,
-                 test_ds=None):
+                 test_ds=None,
+                 train_sampler=None):
         # make sure that the model is a lightningflowermodel
         assert isinstance(model, LightningFlowerModel)
         # check option datasets
@@ -49,6 +51,8 @@ class LightningFlowerClient(fl.client.Client):
         # optional training and test datasets
         self.train_ds = train_ds
         self.test_ds = test_ds
+        # sampler used to draw training examples
+        self.train_sampler = train_sampler
         # trainer configuration
         self.trainer_config = trainer_args
 
@@ -115,7 +119,11 @@ class LightningFlowerClient(fl.client.Client):
         # update local client model parameters
         self.set_parameters(weights)
         # create dataloader on-the-fly
-        data_loader = DataLoader(self.train_ds, batch_size=self.trainer_config.batch_size, shuffle=True)
+        data_loader = DataLoader(dataset=self.train_ds,
+                                 batch_size=self.trainer_config.batch_size_train,
+                                 sampler=self.train_sampler,
+                                 num_workers=self.trainer_config.num_workers,
+                                 shuffle=True)
         # training procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
         trainer.fit(model=self.localModel.model, train_dataloader=data_loader)
@@ -151,7 +159,10 @@ class LightningFlowerClient(fl.client.Client):
         # update local client model parameters
         self.set_parameters(weights)
         # create dataloader on-the-fly
-        data_loader = DataLoader(self.test_ds, batch_size=self.trainer_config.batch_size, shuffle=True)
+        data_loader = DataLoader(dataset=self.test_ds,
+                                 batch_size=self.trainer_config.batch_size_test,
+                                 num_workers=self.trainer_config.num_workers,
+                                 shuffle=True)
         # evaluation procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
         test_result = trainer.test(self.localModel.model, data_loader)

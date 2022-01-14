@@ -4,12 +4,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 required_packages = [
-    "torch", "flwr", "pytorch-lightning", "numpy"
+    "torch", "flwr", "pytorch-lightning", "numpy", "scikit-learn"
 ]
 
 setup(
     name="lightningflower",
-    version="0.1.3",
+    version="0.1.5",
     description="Pre-packaged federated learning framework using Flower and PyTorch-Lightning.",
     long_description=long_description,
     long_description_content_type="text/markdown",
