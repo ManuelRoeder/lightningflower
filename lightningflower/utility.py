@@ -18,6 +18,7 @@ def printf(message):
 
 def load_params(full_filepath):
     params = None
+    print("Loading weights from " + full_filepath)
     # load weights
     if os.path.isfile(full_filepath):
         weights = np.load(full_filepath, allow_pickle=True)

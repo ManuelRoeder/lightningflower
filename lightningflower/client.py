@@ -10,6 +10,7 @@ from lightningflower.model import LightningFlowerModel
 from torch.utils.data import DataLoader
 
 
+
 class LightningFlowerClient(fl.client.Client):
     @staticmethod
     def add_client_specific_args(parent_parser):
@@ -17,7 +18,7 @@ class LightningFlowerClient(fl.client.Client):
         parser.add_argument("--host_address", type=str, default=LightningFlowerDefaults.HOST_ADDRESS)
         parser.add_argument("--max_msg_size", type=int, default=LightningFlowerDefaults.GRPC_MAX_MSG_LENGTH)
         parser.add_argument("--client_id", type=int, default=LightningFlowerDefaults.CLIENT_ID)
-        parser.add_argument("--num_clients", type=int, default=LightningFlowerDefaults.CLIENT_ID)
+        parser.add_argument("--num_clients", type=int, default=LightningFlowerDefaults.NUM_CLIENTS)
         return parent_parser
 
     @staticmethod
@@ -80,6 +81,13 @@ class LightningFlowerClient(fl.client.Client):
         parameters = fl.common.weights_to_parameters(weights)
         return fl.common.ParametersRes(parameters=parameters)
 
+    @staticmethod
+    def set_model_parameters(model, parameters):
+        # we need to adapt for pot. new parameters and shape mismatching, may raise issues later
+        # see https://github.com/pytorch/pytorch/issues/40859
+        new_state_dict = LightningFlowerClient.update_state_dict(model.state_dict(), parameters)
+        model.load_state_dict(new_state_dict, strict=False)
+
     def set_parameters(self, parameters):
         """Set the current local model parameters
 
@@ -89,10 +97,7 @@ class LightningFlowerClient(fl.client.Client):
 
         """
         print(f"Client {self.c_id}: set_parameters")
-        # we need to adapt for pot. new parameters and shape mismatching, may raise issues later
-        # see https://github.com/pytorch/pytorch/issues/40859
-        new_state_dict = self.update_state_dict(self.localModel.model.state_dict(), parameters)
-        self.localModel.model.load_state_dict(new_state_dict, strict=False)
+        LightningFlowerClient.set_model_parameters(self.localModel.model, parameters)
 
     def fit(self, ins: FitIns) -> FitRes:
         """Refine the provided weights using the locally held dataset.

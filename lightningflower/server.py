@@ -3,6 +3,7 @@ import flwr as fl
 from flwr.server.client_manager import SimpleClientManager
 from lightningflower.config import LightningFlowerDefaults
 from lightningflower.strategy import LightningFlowerFedAvgStrategy
+from lightningflower.utility import boolean_string
 
 
 class LightningFlowerServer(fl.server.Server):
@@ -12,6 +13,8 @@ class LightningFlowerServer(fl.server.Server):
         parser.add_argument("--host_address", type=str, default=LightningFlowerDefaults.HOST_ADDRESS)
         parser.add_argument("--num_rounds", type=int, default=LightningFlowerDefaults.NR_ROUNDS)
         parser.add_argument("--max_msg_size", type=int, default=LightningFlowerDefaults.GRPC_MAX_MSG_LENGTH)
+        parser.add_argument("--server_side_evaluation", default=False, type=boolean_string)
+        parser.add_argument("--force_final_distributed_eval", default=False, type=boolean_string)
         return parent_parser
 
     def __init__(self, strategy=None):
@@ -21,4 +24,3 @@ class LightningFlowerServer(fl.server.Server):
         if strategy is None:
             strategy = LightningFlowerFedAvgStrategy()
         super().__init__(client_manager=client_manager, strategy=strategy)
-
