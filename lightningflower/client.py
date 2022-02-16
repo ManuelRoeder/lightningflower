@@ -1,10 +1,13 @@
 """LightningFlower Client"""
 import flwr as fl
-from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes
 import pytorch_lightning as pl
 import torch
 import timeit
+
 from collections import OrderedDict
+from flwr.common import EvaluateIns, EvaluateRes, FitIns, FitRes
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
+
 from lightningflower.config import LightningFlowerDefaults
 from lightningflower.model import LightningFlowerModel
 from torch.utils.data import DataLoader
@@ -35,6 +38,7 @@ class LightningFlowerClient(fl.client.Client):
                  model,
                  trainer_args,
                  c_id,
+                 datamodule=None,
                  train_ds=None,
                  test_ds=None,
                  train_sampler=None):
@@ -49,11 +53,20 @@ class LightningFlowerClient(fl.client.Client):
         self.c_id = c_id
         # assign local model
         self.localModel = model
+
+        # datamodule or train/test sets
+        if (train_ds is not None or test_ds is not None) and datamodule is not None:
+            raise MisconfigurationException(
+                "You cannot pass `train_dataloader` or `val_dataloaders` to `trainer.fit(datamodule=...)`"
+            )
+
+        self.datamodule = datamodule
         # optional training and test datasets
         self.train_ds = train_ds
         self.test_ds = test_ds
-        # sampler used to draw training examples
+        # sampler used to draw examples
         self.train_sampler = train_sampler
+
         # trainer configuration
         self.trainer_config = trainer_args
 
@@ -123,18 +136,25 @@ class LightningFlowerClient(fl.client.Client):
         fit_begin = timeit.default_timer()
         # update local client model parameters
         self.set_parameters(weights)
-        # create dataloader on-the-fly
-        shuffle_loading = self.train_sampler is None
-        data_loader = DataLoader(dataset=self.train_ds,
-                                 batch_size=self.trainer_config.batch_size_train,
-                                 sampler=self.train_sampler,
-                                 num_workers=self.trainer_config.num_workers,
-                                 shuffle=shuffle_loading)
+
+        data_loader = None
+        if self.datamodule is None:
+            # create dataloader on-the-fly
+            shuffle_loading = self.train_sampler is None
+            data_loader = DataLoader(dataset=self.train_ds,
+                                     batch_size=self.trainer_config.batch_size_train,
+                                     sampler=self.train_sampler,
+                                     num_workers=self.trainer_config.num_workers,
+                                     shuffle=shuffle_loading)
+
+        else:
+            data_loader = self.datamodule
+
         # training procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
-        trainer.fit(model=self.localModel.model, train_dataloader=data_loader)
+        trainer.fit(model=self.localModel.model, train_dataloaders=data_loader)
         # calculate nr. of examples used by Trainer for train
-        num_train_examples = data_loader.batch_size * trainer.num_training_batches
+        num_train_examples = (data_loader.batch_size * trainer.num_training_batches)
         # return updated model parameters
         weights_prime: fl.common.Weights = self.get_trainable_weights()
         params_prime = fl.common.weights_to_parameters(weights_prime)
@@ -164,14 +184,19 @@ class LightningFlowerClient(fl.client.Client):
         weights: fl.common.Weights = fl.common.parameters_to_weights(ins.parameters)
         # update local client model parameters
         self.set_parameters(weights)
-        # create dataloader on-the-fly
-        data_loader = DataLoader(dataset=self.test_ds,
-                                 batch_size=self.trainer_config.batch_size_test,
-                                 num_workers=self.trainer_config.num_workers,
-                                 shuffle=False)
+
+        data_loader = None
+        if self.datamodule is None:
+            # create dataloader on-the-fly
+            data_loader = DataLoader(dataset=self.test_ds,
+                                     batch_size=self.trainer_config.batch_size_test,
+                                     num_workers=self.trainer_config.num_workers,
+                                     shuffle=False)
+        else:
+            data_loader = self.datamodule
         # evaluation procedure
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
-        test_result = trainer.test(self.localModel.model, data_loader)
+        test_result = trainer.test(model=self.localModel.model, dataloaders=data_loader)
         # obtain result of first train_loader
         train_loader_0_result = test_result[0]
         test_loss = train_loader_0_result["test_loss"]
