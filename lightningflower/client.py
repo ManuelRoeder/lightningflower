@@ -13,7 +13,6 @@ from lightningflower.model import LightningFlowerModel
 from torch.utils.data import DataLoader
 
 
-
 class LightningFlowerClient(fl.client.Client):
     @staticmethod
     def add_client_specific_args(parent_parser):
@@ -44,11 +43,6 @@ class LightningFlowerClient(fl.client.Client):
                  train_sampler=None):
         # make sure that the model is a lightningflowermodel
         assert isinstance(model, LightningFlowerModel)
-        # check option datasets
-        if train_ds is None:
-            train_ds = []
-        if test_ds is None:
-            test_ds = []
         # client id
         self.c_id = c_id
         # assign local model
@@ -95,11 +89,11 @@ class LightningFlowerClient(fl.client.Client):
         return fl.common.ParametersRes(parameters=parameters)
 
     @staticmethod
-    def set_model_parameters(model, parameters):
+    def set_model_parameters(model, parameters, strict=False):
         # we need to adapt for pot. new parameters and shape mismatching, may raise issues later
         # see https://github.com/pytorch/pytorch/issues/40859
         new_state_dict = LightningFlowerClient.update_state_dict(model.state_dict(), parameters)
-        model.load_state_dict(new_state_dict, strict=False)
+        model.load_state_dict(new_state_dict, strict=strict)
 
     def set_parameters(self, parameters):
         """Set the current local model parameters
@@ -198,12 +192,16 @@ class LightningFlowerClient(fl.client.Client):
         trainer = pl.Trainer.from_argparse_args(self.trainer_config)
         test_result = trainer.test(model=self.localModel.model, dataloaders=data_loader)
         # obtain result of first train_loader
-        train_loader_0_result = test_result[0]
-        test_loss = train_loader_0_result["test_loss"]
-        accuracy = train_loader_0_result["test_acc"]
+        test_loader_0_result = test_result[0]
+        test_loss = test_loader_0_result["test_loss"] if "test_loss" in test_loader_0_result else 1.0
+        accuracy = test_loader_0_result["test_acc"] if "test_acc" in test_loader_0_result else None
         # calculate nr. of examples used by Trainer for test
         num_test_examples = data_loader.batch_size * trainer.num_test_batches[0]
-        metrics = {"accuracy": accuracy}
+        # add metrics if available
+        metrics = {}
+        if accuracy is not None:
+            metrics['accuracy'] = accuracy
+
         return EvaluateRes(loss=test_loss,
                            num_examples=num_test_examples,
                            metrics=metrics)
