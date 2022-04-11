@@ -1,3 +1,5 @@
+![Alt text](lightningflower_logo.png?raw=true "Logo")
+
 # LightingFlower
 
 
