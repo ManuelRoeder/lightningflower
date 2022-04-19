@@ -152,7 +152,9 @@ class LightningFlowerClient(fl.client.Client):
         # return updated model parameters
         weights_prime: fl.common.Weights = self.get_trainable_weights()
         params_prime = fl.common.weights_to_parameters(weights_prime)
-        metrics = {"duration": timeit.default_timer() - fit_begin}
+        metrics = {}
+        metrics["duration"] = timeit.default_timer() - fit_begin
+        metrics["client_id"] = self.c_id
         return FitRes(parameters=params_prime,
                       num_examples=num_train_examples,
                       metrics=metrics)
@@ -201,6 +203,7 @@ class LightningFlowerClient(fl.client.Client):
         metrics = {}
         if accuracy is not None:
             metrics['accuracy'] = accuracy
+        metrics["client_id"] = self.c_id
 
         return EvaluateRes(loss=test_loss,
                            num_examples=num_test_examples,
