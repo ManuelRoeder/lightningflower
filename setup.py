@@ -9,7 +9,7 @@ required_packages = [
 
 setup(
     name="lightningflower",
-    version="0.1.7",
+    version="0.1.8",
     description="Pre-packaged federated learning framework using Flower and PyTorch-Lightning.",
     long_description=long_description,
     long_description_content_type="text/markdown",
